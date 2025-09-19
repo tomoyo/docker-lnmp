@@ -2,3 +2,4 @@
 !default.conf
 !fpm
 !fpm/php*
+!security_rules.inc
