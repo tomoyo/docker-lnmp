@@ -2,9 +2,21 @@ FROM php:8.4.3-fpm
 
 LABEL maintainer="ogenes.yi@gmail.com"
 
+ARG ENABLE_LOCALIZE=true
+ARG ENABLE_XDEBUG=false
+
+# 复制时区配置
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN if $ENABLE_LOCALIZE; then \
+    sed -i -e 's|http[s]\?://archive.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://deb.debian.org|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+fi
+
+# 安装基础
 RUN apt-get update --fix-missing \
   && apt-get install -y --no-install-recommends \
     apt-utils \
@@ -40,6 +52,7 @@ RUN apt-get update --fix-missing \
   && rm -rf /var/lib/apt/lists/*
 
 
+# 安装PHP扩展
 RUN docker-php-ext-configure bcmath --enable-bcmath \
     && docker-php-ext-configure pcntl --enable-pcntl \
     && docker-php-ext-configure pdo_mysql --with-pdo-mysql \
@@ -60,6 +73,10 @@ RUN docker-php-ext-configure bcmath --enable-bcmath \
   && docker-php-ext-install opcache \
   && docker-php-ext-enable opcache
 
+RUN if $ENABLE_XDEBUG; then \
+      pecl install xdebug-3.1.6 && \
+      docker-php-ext-enable xdebug; \
+fi
 
 ARG EXT_GD
 RUN if $EXT_GD; then \
@@ -99,6 +116,7 @@ fi
 
 RUN rm -rf /tmp/pear
 
+# °²×° Composer
 ENV COMPOSER_HOME /var/www/.composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/

@@ -2,9 +2,21 @@ FROM php:7.2-fpm
 
 LABEL maintainer="ogenes.yi@gmail.com"
 
+ARG ENABLE_LOCALIZE=true
+ARG ENABLE_XDEBUG=false
+
+# 复制时区配置
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN if $ENABLE_LOCALIZE; then \
+    sed -i -e 's|http[s]\?://archive.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://deb.debian.org|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+fi
+
+# 安装基础
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     apt-utils \
@@ -59,6 +71,10 @@ RUN docker-php-ext-configure bcmath --enable-bcmath \
   && docker-php-ext-install opcache \
   && docker-php-ext-enable opcache
 
+RUN if $ENABLE_XDEBUG; then \
+      pecl install xdebug-3.1.6 && \
+      docker-php-ext-enable xdebug; \
+fi
 
 ARG EXT_GD
 RUN if $EXT_GD; then \
