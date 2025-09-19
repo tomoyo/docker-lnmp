@@ -5,6 +5,12 @@ LABEL maintainer="ogenes.yi@gmail.com"
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# °²×°»ù´¡
+RUN sed -i -e 's|http[s]\?://archive.ubuntu.com|https://mirrors.aliyun.com|g' \
+           -e 's|http[s]\?://security.ubuntu.com|https://mirrors.aliyun.com|g' \
+           -e 's|http[s]\?://deb.debian.org|https://mirrors.aliyun.com|g' \
+           -e 's|http[s]\?://security.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     apt-utils \

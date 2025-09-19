@@ -1,4 +1,4 @@
-ARG VERSION
+ARG VERSION=5.0
 FROM redis:${VERSION}
 
 LABEL maintainer="ogenes.yi@gmail.com"

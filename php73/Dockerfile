@@ -2,9 +2,21 @@ FROM php:7.3-fpm
 
 LABEL maintainer="ogenes.yi@gmail.com"
 
+ARG ENABLE_LOCALIZE=true
+ARG ENABLE_XDEBUG=false
+
+# 复制时区配置
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN if $ENABLE_LOCALIZE; then \
+    sed -i -e 's|http[s]\?://archive.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.ubuntu.com|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://deb.debian.org|https://mirrors.aliyun.com|g' \
+        -e 's|http[s]\?://security.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+fi
+
+# 安装基础
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     apt-utils \
@@ -39,6 +51,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 
+# 安装PHP扩展
 RUN docker-php-ext-configure bcmath --enable-bcmath \
     && docker-php-ext-configure pcntl --enable-pcntl \
     && docker-php-ext-configure pdo_mysql --with-pdo-mysql \
@@ -59,6 +72,10 @@ RUN docker-php-ext-configure bcmath --enable-bcmath \
   && docker-php-ext-install opcache \
   && docker-php-ext-enable opcache
 
+RUN if $ENABLE_XDEBUG; then \
+      pecl install xdebug-3.1.6 && \
+      docker-php-ext-enable xdebug; \
+fi
 
 ARG EXT_GD
 RUN if $EXT_GD; then \
@@ -111,7 +128,7 @@ RUN mkdir -p /data/log && chown -R www-data:www-data /data/log
 
 RUN mkdir -p $COMPOSER_HOME/cache
 
-RUN ln -snf /usr/local/bin/php /usr/local/bin/php72
+RUN ln -snf /usr/local/bin/php /usr/local/bin/php73
 
 VOLUME $COMPOSER_HOME
 WORKDIR /var/www

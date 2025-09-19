@@ -1,9 +1,8 @@
-version: '3.8'
-
 #/etc/hosts
 x-hosts: &hosts
   extra_hosts:
-    - default.dev.com:${NGINX_IP}
+    - ip.www    :${NGINX_IP}
+    - ip.host   :${HOST_IP}
 
 services:
   ### NGINX ##############################################################################
@@ -11,6 +10,9 @@ services:
     build: ./nginx
     container_name: nginx
     privileged: true
+    expose:
+      - 80
+      - 443
     ports:
       - ${NGINX_HOST_HTTP_PORT}:80
       - ${NGINX_HOST_HTTPS_PORT}:443
@@ -41,21 +43,24 @@ services:
       context: ./mysql
       args:
         - VERSION=${MYSQL_VERSION}
+        - ENABLE_DEBUG_LOG=${ENABLE_DEBUG}
 #    M1 需要指定 platform
     container_name: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - TZ=${MYSQL_TIMEZONE}
     volumes:
-      # mysql默认配置文件
-      - ${MYSQL_CONF_PATH}:/etc/mysql/conf.d/docker.cnf
       # 数据文件
       - ${MYSQL_DATA_PATH}:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
+      # 日志文件
+      - ${MYSQL_LOG_PATH}:/var/log/mysql
+    command: --default-authentication-plugin=mysql_native_password ${MYSQL_CONF_COMMAND}
     restart: always
     privileged: true
-    ports:
-      - ${MYSQL_PORT}:3306
+    expose:
+      - 3306
+    #ports:
+    #  - ${MYSQL_PORT}:3306
     networks:
       backend:
         ipv4_address: ${MYSQL_IP}
@@ -68,8 +73,10 @@ services:
     container_name: redis
     command: redis-server /etc/redis/redis.conf
     restart: always
-    ports:
-      - ${REDIS_PORT}:6379
+    expose:
+      - 6379
+    #ports:
+     # - ${REDIS_PORT}:6379
     volumes:
       - ${REDIS_DATA_PATH}:/data
       - ${REDIS_CONF_PATH}:/etc/redis/redis.conf
@@ -92,8 +99,10 @@ services:
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9056:9056"
+    expose:
+      - 9056
+    #ports:
+    #  - "9056:9056"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -101,13 +110,13 @@ services:
       - ./php56/config/php.ini:/usr/local/etc/php/php.ini
       - ./php56/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php56/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php56/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php56/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php56/:/var/log/php/
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php56/:/var/log/php/
+      - ${PHP_LOG_PATH}/php56/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP56_IP}
@@ -122,13 +131,17 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
     container_name: php71
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9071:9071"
+    expose:
+      - 9071
+    #ports:
+    #  - "9071:9071"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -136,13 +149,13 @@ services:
       - ./php71/config/php.ini:/usr/local/etc/php/php.ini
       - ./php71/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php71/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php71/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php71/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php71/:/var/log/php/
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php71/:/var/log/php/
+      - ${PHP_LOG_PATH}/php71/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP71_IP}
@@ -157,13 +170,17 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
     container_name: php72
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9072:9072"
+    expose:
+      - 9072
+    #ports:
+    #  - "9072:9072"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -171,13 +188,13 @@ services:
       - ./php72/config/php.ini:/usr/local/etc/php/php.ini
       - ./php72/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php72/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php72/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php72/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php72/:/var/log/php/
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php72/:/var/log/php/
+      - ${PHP_LOG_PATH}/php72/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP72_IP}
@@ -192,13 +209,17 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
     container_name: php73
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9073:9073"
+    expose:
+      - 9073
+    #ports:
+    #  - "9073:9073"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -206,13 +227,13 @@ services:
       - ./php73/config/php.ini:/usr/local/etc/php/php.ini
       - ./php73/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php73/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php73/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php73/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php73/:/var/log/php/
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php73/:/var/log/php/
+      - ${PHP_LOG_PATH}/php73/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP73_IP}
@@ -227,14 +248,17 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
     container_name: php74
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9074:9074"
-      - "8888:8888"
+    expose:
+      - 9074
+    #ports:
+    #  - "9074:9074"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -242,14 +266,14 @@ services:
       - ./php74/config/php.ini:/usr/local/etc/php/php.ini
       - ./php74/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php74/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php74/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php74/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php74/:/var/log/php/
+      - ${PHP_LOG_PATH}/php74/:/var/log/php/
       # 应用日志
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php74/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP74_IP}
@@ -264,13 +288,17 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
     container_name: php80
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9080:9080"
+    expose:
+      - 9080
+    #ports:
+    #  - "9080:9080"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -278,14 +306,14 @@ services:
       - ./php80/config/php.ini:/usr/local/etc/php/php.ini
       - ./php80/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php80/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php80/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php80/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php80/:/var/log/php/
+      - ${PHP_LOG_PATH}/php80/:/var/log/php/
       # 应用日志
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php80/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP80_IP}
@@ -300,15 +328,20 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
         - EXT_KAFKA=true
     container_name: php81
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9081:9081"
-      - "8881:8881"
+    expose:
+      - 9081
+      - 8881
+    #ports:
+    #  - "9081:9081"
+    #  - "8881:8881"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -316,14 +349,14 @@ services:
       - ./php81/config/php.ini:/usr/local/etc/php/php.ini
       - ./php81/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php81/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php81/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php81/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php81/:/var/log/php/
+      - ${PHP_LOG_PATH}/php81/:/var/log/php/
       # 应用日志
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php81/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP81_IP}
@@ -337,15 +370,20 @@ services:
         - EXT_PROTOBUF=true
         - EXT_MEMCACHED=true
         - EXT_SWOOLED=true
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
         - EXT_KAFKA=true
     container_name: php82
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9082:9082"
-      - "8882:8882"
+    expose:
+      - 9082
+      - 8882
+    #ports:
+    #  - "9082:9082"
+    #  - "8882:8882"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -353,14 +391,14 @@ services:
       - ./php82/config/php.ini:/usr/local/etc/php/php.ini
       - ./php82/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php82/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php82/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php82/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php82/:/var/log/php/
+      - ${PHP_LOG_PATH}/php82/:/var/log/php/
       # 应用日志
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php82/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP82_IP}
@@ -374,15 +412,20 @@ services:
         - EXT_PROTOBUF=false
         - EXT_MEMCACHED=false
         - EXT_SWOOLED=false
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
         - EXT_KAFKA=false
     container_name: php83
     privileged: true
     restart: always
     cap_add:
       - SYS_PTRACE
-    ports:
-      - "9083:9083"
-      - "8883:8883"
+    expose:
+      - 9083
+      - 8883
+    #ports:
+    #  - "9083:9083"
+    #  - "8883:8883"
     #/etc/hosts
     <<: *hosts
     volumes:
@@ -390,54 +433,59 @@ services:
       - ./php83/config/php.ini:/usr/local/etc/php/php.ini
       - ./php83/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
       - ./php83/config/php-fpm.d:/usr/local/etc/php-fpm.d
-      - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-      - ./id_rsa:/root/.ssh/id_rsa
+      - ${DATA_ROOT_PATH}/php83/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php83/id_rsa:/root/.ssh/id_rsa
       # 项目代码
       - ${WEB_ROOT_PATH}:/var/www/
       # php-fpm日志
-      - ./logs/php83/:/var/log/php/
+      - ${PHP_LOG_PATH}/php83/:/var/log/php/
       # 应用日志
-      - ./logs/app/:/data/log/
+      - ${PHP_LOG_PATH}/php83/app/:/data/log/
     networks:
       backend:
         ipv4_address: ${PHP83_IP}
   php84:
-      build:
-        context: ./php84
-        args:
-          - EXT_GD=true
-          - EXT_REDIS=true
-          - EXT_GRPC=true
-          - EXT_PROTOBUF=true
-          - EXT_MEMCACHED=true
-          - EXT_SWOOLED=true
-          - EXT_KAFKA=true
-      container_name: php84
-      privileged: true
-      restart: always
-      cap_add:
-        - SYS_PTRACE
-      ports:
-        - "9084:9084"
-        - "8884:8884"
-      #/etc/hosts
-      <<: *hosts
-      volumes:
-        # php 配置文件
-        - ./php84/config/php.ini:/usr/local/etc/php/php.ini
-        - ./php84/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
-        - ./php84/config/php-fpm.d:/usr/local/etc/php-fpm.d
-        - ./id_rsa.pub:/root/.ssh/id_rsa.pub
-        - ./id_rsa:/root/.ssh/id_rsa
-        # 项目代码
-        - ${WEB_ROOT_PATH}:/var/www/
-        # php-fpm日志
-        - ./logs/php84/:/var/log/php/
-        # 应用日志
-        - ./logs/app/:/data/log/
-      networks:
-        backend:
-          ipv4_address: ${PHP84_IP}
+    build:
+      context: ./php84
+      args:
+        - EXT_GD=true
+        - EXT_REDIS=true
+        - EXT_GRPC=true
+        - EXT_PROTOBUF=true
+        - EXT_MEMCACHED=true
+        - EXT_SWOOLED=true
+        - ENABLE_XDEBUG=${ENABLE_DEBUG}
+        - ENABLE_LOCALIZE=${ENABLE_LOCALIZE}
+        - EXT_KAFKA=true
+    container_name: php84
+    privileged: true
+    restart: always
+    cap_add:
+      - SYS_PTRACE
+    expose:
+      - 9084
+      - 8884
+    #ports:
+    #  - "9084:9084"
+    #  - "8884:8884"
+    #/etc/hosts
+    <<: *hosts
+    volumes:
+      # php 配置文件
+      - ./php84/config/php.ini:/usr/local/etc/php/php.ini
+      - ./php84/config/php-fpm.conf:/usr/local/etc/php-fpm.conf
+      - ./php84/config/php-fpm.d:/usr/local/etc/php-fpm.d
+      - ${DATA_ROOT_PATH}/php84/id_rsa.pub:/root/.ssh/id_rsa.pub
+      - ${DATA_ROOT_PATH}/php84/id_rsa:/root/.ssh/id_rsa
+      # 项目代码
+      - ${WEB_ROOT_PATH}:/var/www/
+      # php-fpm日志
+      - ${PHP_LOG_PATH}/php84/:/var/log/php/
+      # 应用日志
+      - ${PHP_LOG_PATH}/php84/app/:/data/log/
+    networks:
+      backend:
+        ipv4_address: ${PHP84_IP}
 networks:
   backend:
     external: true
